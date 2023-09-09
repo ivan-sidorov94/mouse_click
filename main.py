@@ -9,22 +9,23 @@ from tkcalendar import DateEntry
 
 
 def alarms(int1, int2, int3, date1, date2):
+    print(int1, int2, int3, date1, date2)
 
-    cmd = f'C:\Program Files (x86)\EleSy\SCADA Infinity\InfinityAlarms\InfinityAlarms.exe HISTORY DBEG="{date1}" DEND"={date2}"'
-    p = subprocess.Popen(cmd)
-    time.sleep(int1)
-    pyautogui.click(x=1939, y=31)
-    pyautogui.sleep(int2)
-    pyautogui.click(x=1960, y=74)
-    pyautogui.sleep(int2)
-    pyautogui.click(x=2667, y=582)
-    pyautogui.sleep(int2)
-    pyautogui.click(x=2980, y=745)
-    pyautogui.sleep(int2)
-    pyautogui.click(x=2958, y=689)
-    pyautogui.sleep(int3)
-    pyautogui.click(x=3050, y=623)
-    p.kill()
+    # cmd = f'C:\Program Files (x86)\EleSy\SCADA Infinity\InfinityAlarms\InfinityAlarms.exe HISTORY DBEG="{date1}" DEND"={date2}"'
+    # p = subprocess.Popen(cmd)
+    # time.sleep(int1)
+    # pyautogui.click(x=1939, y=31)
+    # pyautogui.sleep(int2)
+    # pyautogui.click(x=1960, y=74)
+    # pyautogui.sleep(int2)
+    # pyautogui.click(x=2667, y=582)
+    # pyautogui.sleep(int2)
+    # pyautogui.click(x=2980, y=745)
+    # pyautogui.sleep(int2)
+    # pyautogui.click(x=2958, y=689)
+    # pyautogui.sleep(int3)
+    # pyautogui.click(x=3050, y=623)
+    # p.kill()
 
 def open_directory():
 
@@ -33,10 +34,10 @@ def open_directory():
 
 def main():
     date_format = '%d.%m.%Y'
-    date1 = datetime.now() - timedelta(days=2)
-    date2 = datetime.now() - timedelta(days=1)
-    date1 = date1.strftime(date_format)
-    date2 = date2.strftime(date_format)
+    before_yesterday = datetime.now() - timedelta(days=2)
+    yesterday = datetime.now() - timedelta(days=1)
+    before_yesterday = before_yesterday.strftime(date_format)
+    yesterday = yesterday.strftime(date_format)
     root = tk.Tk()
     root.title("Выгрузка алармов за предыдущий день")
 # Создание меток и полей ввода
@@ -49,8 +50,16 @@ def main():
     # Создание меток и полей выбора даты
     label4 = tk.Label(root, text="Выберите первую дату:")
     date_entry1 = DateEntry(root)
+    print(date_entry1)
     label5 = tk.Label(root, text="Выберите вторую дату:")
     date_entry2 = DateEntry(root)
+    print(date_entry2)
+    if date_entry1 != before_yesterday or date_entry2 != yesterday:
+        date1 = date_entry1
+        date2 = date_entry2
+    else:
+        date1 = before_yesterday
+        date2 = yesterday
     # Создание кнопок
     button1 = tk.Button(root, text="Запустить программу", command=lambda: alarms(float(int1.get()), float(int2.get()), float(int3.get()), date1, date2))    
     button2 = tk.Button(root, text="Открыть каталог", command=open_directory)
@@ -70,7 +79,7 @@ def main():
     date_entry1.pack()
     label5.pack()
     date_entry2.pack()
-    root.geometry("300x200")
+    #root.geometry("300x200")
 # Запуск главного цикла
     root.mainloop()
 
