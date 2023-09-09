@@ -1,6 +1,6 @@
 import pyautogui
 import subprocess
-import time
+import datetime as dt
 import os
 import tkinter as tk
 from datetime import datetime, timedelta
@@ -49,23 +49,35 @@ def main():
     int3 = tk.Entry(root)
     # Создание меток и полей выбора даты
     label4 = tk.Label(root, text="Выберите первую дату:")
-    date_entry1 = DateEntry(root)
-    print(date_entry1)
+    date_entry1 = DateEntry(root, date_pattern='dd.mm.yyyy')
+    date_entry1.set_date(before_yesterday)
     label5 = tk.Label(root, text="Выберите вторую дату:")
     date_entry2 = DateEntry(root)
-    print(date_entry2)
-    if date_entry1 != before_yesterday or date_entry2 != yesterday:
-        date1 = date_entry1
-        date2 = date_entry2
+    date_entry2.set_date(yesterday)
+    
+    
+    date1 = date_entry1.get_date()
+    date2 = date_entry2.get_date()
+
+
+    
+
+    if date_entry1.format_date() != before_yesterday or date_entry2.format_date() != yesterday:
+        date1 = date1
+        date2 = date2
+        print(1)
     else:
         date1 = before_yesterday
         date2 = yesterday
-    # Создание кнопок
+        print(2)
+    # # Создание кнопок
     button1 = tk.Button(root, text="Запустить программу", command=lambda: alarms(float(int1.get()), float(int2.get()), float(int3.get()), date1, date2))    
     button2 = tk.Button(root, text="Открыть каталог", command=open_directory)
     int1.insert(0, "20")
     int2.insert(0, "0.5")
     int3.insert(0, "10")
+
+   
 # Размещение меток и полей ввода на экране
     label1.pack()
     int1.pack()
