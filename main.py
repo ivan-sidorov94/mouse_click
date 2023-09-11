@@ -1,6 +1,7 @@
 import pyautogui
 import subprocess
 import os
+import time
 import tkinter as tk
 from datetime import datetime, timedelta
 from tkcalendar import DateEntry
@@ -13,21 +14,21 @@ def alarms(date_format, int1, int2, int3, date1, date2):
 
     print(int1, int2, int3, date1, date2)
 
-    # cmd = f'C:\Program Files (x86)\EleSy\SCADA Infinity\InfinityAlarms\InfinityAlarms.exe HISTORY DBEG="{date1}" DEND"={date2}"'
-    # p = subprocess.Popen(cmd)
-    # time.sleep(int1)
-    # pyautogui.click(x=1939, y=31)
-    # pyautogui.sleep(int2)
-    # pyautogui.click(x=1960, y=74)
-    # pyautogui.sleep(int2)
-    # pyautogui.click(x=2667, y=582)
-    # pyautogui.sleep(int2)
-    # pyautogui.click(x=2980, y=745)
-    # pyautogui.sleep(int2)
-    # pyautogui.click(x=2958, y=689)
-    # pyautogui.sleep(int3)
-    # pyautogui.click(x=3050, y=623)
-    # p.kill()
+    cmd = f'C:\Program Files (x86)\EleSy\SCADA Infinity\InfinityAlarms\InfinityAlarms.exe HISTORY DBEG="{date1}" DEND"={date2}"'
+    p = subprocess.Popen(cmd)
+    time.sleep(int1)
+    pyautogui.click(x=1939, y=31)
+    pyautogui.sleep(int2)
+    pyautogui.click(x=1960, y=74)
+    pyautogui.sleep(int2)
+    pyautogui.click(x=2667, y=582)
+    pyautogui.sleep(int2)
+    pyautogui.click(x=2980, y=745)
+    pyautogui.sleep(int2)
+    pyautogui.click(x=2958, y=689)
+    pyautogui.sleep(int3)
+    pyautogui.click(x=3050, y=623)
+    p.kill()
 
 def open_directory():
 
@@ -96,8 +97,8 @@ def main():
     button2.pack()
 
     frame1.pack()
-    frame3.pack()
     frame2.pack()
+    frame3.pack()
 
 # Запуск главного цикла
     root.mainloop()
