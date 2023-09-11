@@ -12,7 +12,7 @@ def alarms(date_format, int1, int2, int3, date1, date2):
     date1 = datetime.strftime(date1, date_format)
     date2 = datetime.strftime(date2, date_format)
 
-    print(int1, int2, int3, date1, date2)
+    # print(int1, int2, int3, date1, date2)
 
     cmd = f'C:\Program Files (x86)\EleSy\SCADA Infinity\InfinityAlarms\InfinityAlarms.exe HISTORY DBEG="{date1}" DEND"={date2}"'
     p = subprocess.Popen(cmd)
