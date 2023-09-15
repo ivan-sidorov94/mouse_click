@@ -15,8 +15,8 @@ config = configparser.RawConfigParser()
 if not os.path.exists(config_file):
     config.add_section('Time')
     config.set('Time', 'time1', '45')
-    config.set('Time', 'time2', '0.5')
-    config.set('Time', 'time3', '15')
+    config.set('Time', 'time2', '0.1')
+    config.set('Time', 'time3', '20')
     with open(config_file, 'w') as configfile:
         config.write(configfile)
 
@@ -32,8 +32,8 @@ if config.read(config_file):
         config.clear()
         config.add_section('Time')
         config.set('Time', 'time1', '45')
-        config.set('Time', 'time2', '0.5')
-        config.set('Time', 'time3', '15')
+        config.set('Time', 'time2', '0.1')
+        config.set('Time', 'time3', '20')
         with open(config_file, 'w') as configfile:
             config.write(configfile)
 
@@ -47,7 +47,7 @@ def alarms(date_format, int1, int2, int3, date1, date2):
     with open(config_file, 'w') as configfile:
         config.write(configfile)
 
-    cmd = f'C:\Program Files (x86)\EleSy\SCADA Infinity\InfinityAlarms\InfinityAlarms.exe HISTORY DBEG="{date1}" DEND"={date2}"'
+    cmd = f'C:\Program Files (x86)\EleSy\SCADA Infinity\InfinityAlarms\InfinityAlarms.exe HISTORY DBEG="{date1}" DEND"={date2}" Bookmark="Новая закладка"'
     p = subprocess.Popen(cmd)
     time.sleep(int1)
     pyautogui.click(x=1939, y=31)
