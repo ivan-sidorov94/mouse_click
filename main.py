@@ -7,14 +7,26 @@ import pandas as pd
 import babel.numbers
 import tzdata
 import tkinter as tk
+import shutil
+
+from tkinter import filedialog
 from openpyxl.styles import Border, Side
 from openpyxl.worksheet.table import Table
-
 from datetime import datetime, timedelta
 from tkcalendar import DateEntry
 from UliPlot.XLSX import auto_adjust_xlsx_column_width
 
-config_file = "C:\Program Files (x86)\EleSy\SCADA Infinity\InfinityAlarms\settings.ini"
+path_to_config = "C:\\Program Files (x86)\\EleSy\\SCADA Infinity\\InfinityAlarms\\settings.ini"
+
+
+path_to_InfinityAlarms = "C:\\Program Files (x86)\\EleSy\\SCADA Infinity\\InfinityAlarms\\InfinityAlarms.exe"
+
+path_to_raw_file = "C:\\Program Files (x86)\\EleSy\\SCADA Infinity\\InfinityAlarms"
+
+
+default_path_to_save = "D:\\Alarms_ASUTP"
+
+config_file = path_to_config
 config = configparser.RawConfigParser()
 
 if not os.path.exists(config_file):
@@ -24,6 +36,7 @@ if not os.path.exists(config_file):
     config.set('Time', 'time3', '20')
     config.add_section('Start')
     config.set('Start', 'autostart', 'False')
+    config.set('Save Directory', 'save_folder_path', f'{default_path_to_save}')
     with open(config_file, 'w') as configfile:
         config.write(configfile)
 
@@ -33,8 +46,9 @@ if config.read(config_file):
         time2 = config.getfloat('Time', 'time2')
         time3 = config.getfloat('Time', 'time3')
         autostart = config.getboolean('Start', 'autostart')
+        save_folder = config.get('Save Directory', 'save_folder_path')
 
-    except:
+    except (configparser.NoSectionError, configparser.NoOptionError):
         time1 = 45
         time2 = 0.5
         time3 = 15
@@ -45,10 +59,11 @@ if config.read(config_file):
         config.set('Time', 'time3', '20')
         config.add_section('Start')
         config.set('Start', 'autostart', 'False')
+        config.add_section('Save Directory')
+        config.set('Save Directory', 'save_folder_path', f'{default_path_to_save}')
 
         with open(config_file, 'w') as configfile:
             config.write(configfile)
-
 
 
 def alarms(date_format, int1, int2, int3, date1, date2):
@@ -61,7 +76,8 @@ def alarms(date_format, int1, int2, int3, date1, date2):
     with open(config_file, 'w') as configfile:
         config.write(configfile)
 
-    cmd = f'C:\Program Files (x86)\EleSy\SCADA Infinity\InfinityAlarms\InfinityAlarms.exe HISTORY DBEG="{date1}" DEND"={date2}" Bookmark="Новая закладка"'
+    cmd = (f'{path_to_InfinityAlarms} HISTORY DBEG="{date1}" DEND"={date2}" '
+           'Bookmark="Новая закладка"')
     p = subprocess.Popen(cmd)
     time.sleep(int1)
     pyautogui.click(x=1939, y=31)
@@ -74,13 +90,18 @@ def alarms(date_format, int1, int2, int3, date1, date2):
     pyautogui.sleep(int2)
     pyautogui.click(x=2958, y=689)
     pyautogui.sleep(int3)
-    #pyautogui.click(x=3050, y=623)
+    # pyautogui.click(x=3050, y=623)
     p.kill()
 
-def open_directory():
 
-    directory = 'C:\Program Files (x86)\EleSy\SCADA Infinity\InfinityAlarms'
-    os.startfile(directory)
+def open_directory():
+    save_folder_path = config.get('Save Directory', 'save_folder_path')
+    try:
+        os.startfile(save_folder_path)
+    except FileNotFoundError:
+        os.makedirs(save_folder_path, exist_ok=True)
+        os.startfile(save_folder_path)
+
 
 def obrabotka(date1, date2):
 
@@ -88,76 +109,132 @@ def obrabotka(date1, date2):
     date1 = datetime.strftime(date1, date_format)
     date2 = datetime.strftime(date2, '%Y.%m.%d')
 
-
-    file_name = f'C:\Program Files (x86)\EleSy\SCADA Infinity\InfinityAlarms\Alarms_{date1}.xls'
+    file_name = rf'{path_to_raw_file}\Alarms_{date1}.xls'
     sheet_name = 'Лист1'
 
     # Читаем только необходимые столбцы
-    df = pd.read_excel(file_name, sheet_name=sheet_name, usecols=[1, 2, 4, 5], skiprows=2, names=['Сообщение', 'Класс сообщения', 'Состояние', 'Мнемосхема'])
-    
-    # Подсчитываем дубликаты напрямую
-    duplicates_df = df.groupby(list(df.columns)).size().reset_index(name='Dublicates')
-    
-    # Сортируем по количеству дубликатов
-    duplicates_df.sort_values(by='Dublicates', ascending=False, inplace=True)
-    
-# Вычисляем общую сумму
-    total_duplicates = duplicates_df['Dublicates'].sum()
-    
+    df = pd.read_excel(file_name, sheet_name=sheet_name, usecols=[0, 1, 2, 4, 5],
+                       skiprows=2, names=['Время','Сообщение', 'Класс сообщения',
+                                          'Состояние', 'Мнемосхема'], decimal=',', dtype=str)
+
+    # Заменяем NaN на пустую строку
+    df = df.fillna('')
+
+    # Создаем новый фрейм для ремонта
+    df_rem = df[df['Сообщение'].str.contains('ремонт')]
+
+# Удаляем ненужные столбцы из фреймов
+    df = df.drop(columns=['Время'])
+    df_rem = df_rem.drop(columns=['Класс сообщения','Состояние', 'Мнемосхема'])
+
+# Подсчитываем дубликаты напрямую
+    df = df.groupby(list(df.columns)).size().reset_index(name='Dublicates')
+
+# Сортируем по количеству дубликатов
+    df = df.sort_values(by='Dublicates', ascending=False)
+
+# Считаем общее количество
+    total_dub = df['Dublicates'].sum()
+
 # Добавляем строку с общим количеством
-    duplicates_df.loc[len(duplicates_df.index)] = ['', '', '', 'Всего сообщений:', total_duplicates]   
-     # Создаем объект Border с границами
-    thin_border = Border(left=Side(style='thin'), 
-                     right=Side(style='thin'), 
-                     top=Side(style='thin'), 
-                     bottom=Side(style='thin'))
-    
+    df.loc[len(df.index)] = ['', '', '','Всего сообщений:',total_dub]
+# Создаем объект Border с границами
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin'))
+
     with pd.ExcelWriter(file_name, engine='openpyxl', mode='a') as writer:
-        duplicates_df.to_excel(writer, sheet_name='NoDublicates', index=False)
-    
+        df.to_excel(writer, sheet_name='NoDublicates', index=False)
+
     # Получаем объект workbook
         workbook = writer.book
-    
-    # Получаем объект worksheet
+
+# Получаем объект worksheet для другого листа
+        worksheet = writer.sheets['Лист1']
+
+# Получаем номер последней строки с данными
+        num_rows = worksheet.max_row
+
+# Создаем объект Table для диапазона данных на другом листе, начиная с 3 строки
+        last_col_letter = 'F'  # Замените на букву последнего столбца
+        tab = Table(displayName="Table1",ref="A3:" + last_col_letter + str(num_rows))
+
+# Добавляем таблицу в другой лист
+        worksheet.add_table(tab)
+
+# Получаем объект worksheet
         worksheet = writer.sheets['NoDublicates']
-    
+
         for row in worksheet.iter_rows():
             for cell in row:
-            # Применяем границы к каждой ячейке
+# Применяем границы к каждой ячейке
                 cell.border = thin_border
-            
-    # Создаем объект Table для всего диапазона данных
-        tab = Table(displayName="Table1", ref="A1:E" + str(len(duplicates_df.index) + 1))
 
-    # Добавляем таблицу в лист
+# Создаем объект Table для всего диапазона данных и добавляем фильтр
+        tab = Table(displayName="Table2",ref="A1:E" + str(len(df.index) + 1))
+
+# Добавляем таблицу в лист
         worksheet.add_table(tab)
-    
-        auto_adjust_xlsx_column_width(duplicates_df, writer, sheet_name="NoDublicates", index=False)
 
-    os.rename(file_name, f'C:\Program Files (x86)\EleSy\SCADA Infinity\InfinityAlarms\Отчет по алармам за период_{date2}.xls')
+# Автоматическое расширение столбцов
+        auto_adjust_xlsx_column_width(df, writer, sheet_name="NoDublicates", index=False)
+
+        df_rem.to_excel(writer, sheet_name='Ремонт', index=False)
+
+        worksheet = writer.sheets['Ремонт']
+
+        for row in worksheet.iter_rows():
+            for cell in row:
+# Применяем границы к каждой ячейке
+                cell.border = thin_border
+
+# Создаем объект Table для всего диапазона данных и добавляем фильтр
+        tab = Table(displayName="Table3",ref="A1:B" + str(len(df.index) + 1))
+
+# Добавляем таблицу в лист
+        worksheet.add_table(tab)
+
+        auto_adjust_xlsx_column_width(df_rem, writer, sheet_name="Ремонт", index=False)
+
+    shutil.move(file_name,
+              f'{save_folder}\\Отчет по алармам за период_{date2}.xls')
+
+    if var:
+        root.destroy()
+
 
 def autostart_cmd():
     if var.get() == 1:
-        print(1)
         config.set('Start', 'autostart', 'True')
     else:
-        print(2)
         config.set('Start', 'autostart', 'False')
     with open(config_file, 'w') as f:
         config.write(f)
+
+
+def set_save_folder():
+    save_folder_path = filedialog.askdirectory()
+    config.set('Save Directory', 'save_folder_path', f'{save_folder_path}')
+    with open(config_file, 'w') as f:
+        config.write(f)
+
 
 def main():
 
     # Вычисление вчерашней и позавчерашней даты
     date_format = '%d.%m.%Y'
-    #before_yesterday = datetime.now() - timedelta(days=2)
+    # before_yesterday = datetime.now() - timedelta(days=2)
     yesterday = datetime.now() - timedelta(days=1)
     today = datetime.now()
-    #before_yesterday = before_yesterday.strftime(date_format)
+    # before_yesterday = before_yesterday.strftime(date_format)
     yesterday = yesterday.strftime(date_format)
     today = today.strftime(date_format)
 
     global var
+    global root
+
     root = tk.Tk()
     var = tk.IntVar(value=config.getboolean('Start', 'autostart'))
     root.title("Выгрузка алармов за предыдущий день")
@@ -165,6 +242,7 @@ def main():
     frame1 = tk.Frame(root)
     frame2 = tk.Frame(root)
     frame3 = tk.Frame(root)
+    frame4 = tk.Frame(root)
 
     # Создание меток и полей выбора даты
     label1 = tk.Label(frame1, text="Выберите начальную дату:")
@@ -188,14 +266,22 @@ def main():
     int3 = tk.Entry(frame3)
     int3.insert(0, str(time3))
 
+    dir_button = tk.Button(frame3, text="Выбрать папку для сохранения",
+                           command=set_save_folder)
+
     # # Создание кнопок
-    button1 = tk.Button(frame3, text="Запустить программу", command=lambda: alarms(date_format, float(int1.get()), float(int2.get()), 
-                                                                                   float(int3.get()), date_entry1.get_date(), date_entry2.get_date()))    
+    button1 = tk.Button(frame3, text="Запустить Infinity Alarms", command=lambda:
+                        alarms(date_format, float(int1.get()), float(int2.get()),
+                               float(int3.get()), date_entry1.get_date(),
+                               date_entry2.get_date()))
     button2 = tk.Button(frame3, text="Открыть каталог", command=open_directory)
 
-    button3 = tk.Button(frame3, text="Запустить обработку", command=lambda: obrabotka(date_entry1.get_date(), date_entry2.get_date()))
-    check_button = tk.Checkbutton(frame3, text='Автостарт', variable=var, command=autostart_cmd)
-   
+    button3 = tk.Button(frame3, text="Запустить обработку", command=lambda:
+                        obrabotka(date_entry1.get_date(),
+                                  date_entry2.get_date()))
+    check_button = tk.Checkbutton(frame3, text='Автостарт', variable=var,
+                                  command=autostart_cmd)
+
 # Размещение меток и полей ввода на экране
     label1.pack(side='left', padx=5)
     label2.pack(side='left', padx=5)
@@ -209,22 +295,26 @@ def main():
     label5.pack()
     int3.pack()
     button1.pack()
-    button2.pack()
     button3.pack()
+    dir_button.pack()
+    button2.pack()
     check_button.pack()
-
 
     frame1.pack()
     frame2.pack()
+    frame4.pack()
     frame3.pack()
 
     if config.getboolean('Start', 'autostart'):
-        alarms(date_format, float(int1.get()), float(int2.get()), float(int3.get()), date_entry1.get_date(), date_entry2.get_date())
+        alarms(date_format, float(int1.get()), float(int2.get()),
+               float(int3.get()), date_entry1.get_date(),
+               date_entry2.get_date())
         time.sleep(5)
         obrabotka(date_entry1.get_date(), date_entry2.get_date())
 
 # Запуск главного цикла
     root.mainloop()
+
 
 if __name__ == "__main__":
     main()
