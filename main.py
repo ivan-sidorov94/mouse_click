@@ -127,6 +127,25 @@ def obrabotka(date1, date2):
     df = df.drop(columns=['Время'])
     df_rem = df_rem.drop(columns=['Класс сообщения','Состояние', 'Мнемосхема'])
 
+# Создаем временный фрейм для обработки сообщений о ремонте, разбивая столбец Сообщение на 2
+    new_df = df_rem['Сообщение'].str.split(' П', expand=True, n=-1)
+
+# Удаляем столбец перед конкатенацией
+    df_rem = df_rem.drop(columns='Сообщение')
+
+# Соединяем оба фрейма
+    df_rem = pd.concat([df_rem, new_df], axis=1)
+
+# Удаляем из памяти временный фрейм
+    del new_df
+
+# Переименовываем столбцы
+    df_rem.columns = ['Время','Датчик|ИМ','Команда']
+
+# Изменяем значения в столбце Команда в зависимости от значения
+    df_rem.loc[df_rem['Команда'].str.contains('Снять'), 'Команда'] =  'Снят с ремонта'
+    df_rem.loc[df_rem['Команда'].str.contains('Вывести'), 'Команда'] =  'Выведен в ремонт'
+
 # Подсчитываем дубликаты напрямую
     df = df.groupby(list(df.columns)).size().reset_index(name='Dublicates')
 
@@ -191,7 +210,7 @@ def obrabotka(date1, date2):
                 cell.border = thin_border
 
 # Создаем объект Table для всего диапазона данных и добавляем фильтр
-        tab = Table(displayName="Table3",ref="A1:B" + str(len(df.index) + 1))
+        tab = Table(displayName="Table3",ref="A1:C" + str(len(df.index) + 1))
 
 # Добавляем таблицу в лист
         worksheet.add_table(tab)
