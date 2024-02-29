@@ -121,7 +121,7 @@ def obrabotka(date1, date2):
     df = df.fillna('')
 
     # Создаем новый фрейм для ремонта
-    df_rem = df[df['Сообщение'].str.contains('ремонт')]
+    df_rem = df[df['Сообщение'].str.contains('ремонт"') | df['Сообщение'].str.contains('ремонта"')]
 
 # Удаляем ненужные столбцы из фреймов
     df = df.drop(columns=['Время'])
